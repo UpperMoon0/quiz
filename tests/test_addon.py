@@ -127,7 +127,7 @@ def test_descriptive_choices_render_in_embed_with_short_selector_buttons():
                 "choices": [
                     {
                         "id": "route-a",
-                        "text": "Prioritize the Moon trip because Titanium is needed for EV and AE2 progression.",
+                        "text": "Prioritize the Moon trip because Titanium is needed for EV and AE2 progression right now.",
                         "correct": True,
                     },
                     {
