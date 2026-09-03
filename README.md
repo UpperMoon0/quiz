@@ -25,8 +25,11 @@ gtnh = "gtnh_quiz_data:load_manifest"
 ```
 
 The provider returns a mapping matching schema version 1. The engine validates
-question IDs, choice IDs/text, exactly one correct choice, sample size, Discord
-alias names, and button-label limits before registering commands.
+question IDs, choice IDs/text, exactly one correct choice, sample size, and Discord
+alias names before registering commands. Choice text may be up to 500 characters.
+Questions and full answer text render in an embed; the interaction buttons use
+short `A` through `E` selector labels so Discord's button-label limit does not
+constrain the knowledge being tested.
 
 `QUIZ_QUESTION_SET_STRICT` defaults to `true`. If an explicitly selected question
 pack is missing or invalid, addon setup fails instead of silently starting with a
