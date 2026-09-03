@@ -12,12 +12,32 @@ from .service import QuizAccessError, QuizService, QuizStateError
 
 logger = logging.getLogger("quiz-discord-addon")
 
+CHOICE_LABELS = "ABCDE"
+
 
 def _env_flag(name: str, default: bool) -> bool:
     raw = os.getenv(name)
     if raw is None:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _choice_label(index: int) -> str:
+    return CHOICE_LABELS[index]
+
+
+def _question_embed(question_index: int, question: Question) -> discord.Embed:
+    embed = discord.Embed(
+        title=f"Question {question_index + 1}",
+        description=question.prompt,
+    )
+    for index, choice in enumerate(question.choices):
+        embed.add_field(
+            name=_choice_label(index),
+            value=choice.text,
+            inline=False,
+        )
+    return embed
 
 
 class QuizView(discord.ui.View):
@@ -28,9 +48,9 @@ class QuizView(discord.ui.View):
         self.user_id = user_id
         self.question_index = question_index
 
-        for choice in question.choices:
+        for index, choice in enumerate(question.choices):
             button = discord.ui.Button(
-                label=choice.text,
+                label=_choice_label(index),
                 style=discord.ButtonStyle.primary,
                 custom_id=f"quiz:{session_id}:{question_index}:{choice.id}",
             )
@@ -201,7 +221,8 @@ class QuizAddon:
         if question is None:
             return
         view = QuizView(self, session_id, user_id, question_index, question)
-        await interaction.followup.send(content=question.prompt, view=view)
+        embed = _question_embed(question_index, question)
+        await interaction.followup.send(embed=embed, view=view)
 
     async def shutdown(self) -> None:
         if self._bot is not None:
