@@ -24,6 +24,18 @@ if "discord" not in sys.modules:
         def __init__(self, **kwargs):
             self.callback = None
             self.disabled = False
+            self.label = kwargs.get("label")
+            self.custom_id = kwargs.get("custom_id")
+            self.style = kwargs.get("style")
+
+    class _Embed:
+        def __init__(self, *, title=None, description=None):
+            self.title = title
+            self.description = description
+            self.fields = []
+
+        def add_field(self, *, name, value, inline):
+            self.fields.append(SimpleNamespace(name=name, value=value, inline=inline))
 
     class _ButtonStyle:
         primary = 1
@@ -47,6 +59,7 @@ if "discord" not in sys.modules:
 
     discord.ui = SimpleNamespace(View=_View, Button=_Button)
     discord.ButtonStyle = _ButtonStyle
+    discord.Embed = _Embed
     discord.Interaction = object
     app_commands.Group = _Group
     app_commands.Command = _Command
@@ -55,7 +68,7 @@ if "discord" not in sys.modules:
     sys.modules["discord"] = discord
     sys.modules["discord.app_commands"] = app_commands
 
-from quiz_discord_addon.addon import QuizAddon
+from quiz_discord_addon.addon import QuizAddon, QuizView, _question_embed
 from quiz_discord_addon.catalog import QuizCatalog
 from quiz_discord_addon.models import QuizManifest
 
@@ -98,6 +111,47 @@ class FakeTree:
 class FakeBot:
     def __init__(self):
         self.tree = FakeTree()
+
+
+def test_descriptive_choices_render_in_embed_with_short_selector_buttons():
+    raw = {
+        "schema_version": 1,
+        "id": "long-choice",
+        "title": "Long choice",
+        "description": "Long choice quiz",
+        "sample_size": 1,
+        "questions": [
+            {
+                "id": "long-choice-q1",
+                "prompt": "Choose the best progression decision.",
+                "choices": [
+                    {
+                        "id": "route-a",
+                        "text": "Prioritize the Moon trip because Titanium is needed for EV and AE2 progression right now.",
+                        "correct": True,
+                    },
+                    {
+                        "id": "route-b",
+                        "text": "Stay in HV and assume additional power can substitute for missing Titanium.",
+                        "correct": False,
+                    },
+                ],
+            }
+        ],
+    }
+    question = QuizManifest.model_validate(raw).questions[0]
+    assert len(question.choices[0].text) > 80
+
+    view = QuizView(SimpleNamespace(service=None), "session", 123, 0, question)
+    assert [button.label for button in view.children] == ["A", "B"]
+    assert view.children[0].custom_id.endswith(":route-a")
+
+    embed = _question_embed(0, question)
+    assert embed.title == "Question 1"
+    assert embed.description == question.prompt
+    assert [field.name for field in embed.fields] == ["A", "B"]
+    assert embed.fields[0].value == question.choices[0].text
+    assert embed.fields[1].value == question.choices[1].text
 
 
 @pytest.mark.asyncio

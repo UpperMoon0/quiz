@@ -11,7 +11,10 @@ ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 
 class Choice(BaseModel):
     id: Annotated[str, Field(min_length=1, max_length=16)]
-    text: Annotated[str, Field(min_length=1, max_length=80)]
+    # Choice text is rendered in an embed field, not on the Discord button.
+    # 500 keeps five choices plus the 1,900-character prompt within Discord's
+    # 6,000-character aggregate embed limit while leaving room for field names.
+    text: Annotated[str, Field(min_length=1, max_length=500)]
     correct: bool = False
 
 
