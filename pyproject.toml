@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quiz"
+version = "0.1.0"
+description = "Reusable multiple-choice quiz addon for Discord Adapter"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "discord.py>=2.3,<3",
+  "pydantic>=2.7,<3",
+]
+
+[project.entry-points."discord_adapter.addons"]
+quiz = "quiz_discord_addon.addon:QuizAddon"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/quiz_discord_addon"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "auto"
