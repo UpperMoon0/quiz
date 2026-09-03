@@ -30,6 +30,22 @@ def test_valid_manifest():
     assert manifest.questions[0].correct_choice.id == "a"
 
 
+def test_accepts_descriptive_choice_text_longer_than_button_limit():
+    raw = base_manifest()
+    text = "A detailed progression answer that is intentionally longer than a Discord button label."
+    assert len(text) > 80
+    raw["questions"][0]["choices"][0]["text"] = text
+    manifest = QuizManifest.model_validate(raw)
+    assert manifest.questions[0].choices[0].text == text
+
+
+def test_rejects_choice_text_beyond_embed_contract():
+    raw = base_manifest()
+    raw["questions"][0]["choices"][0]["text"] = "x" * 501
+    with pytest.raises(ValidationError):
+        QuizManifest.model_validate(raw)
+
+
 def test_rejects_multiple_correct_choices():
     raw = base_manifest()
     raw["questions"][0]["choices"][1]["correct"] = True
