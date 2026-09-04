@@ -212,40 +212,22 @@ class QuizService:
         candidate_ids: set[str],
         posterior: list[float],
     ) -> Question:
-        candidates = [manifest.question_by_id(question_id) for question_id in candidate_ids]
-        tiered = [question for question in candidates if question.tier is not None]
+        target_tier = self._posterior_median_index(posterior)
+        tiered = [
+            manifest.question_by_id(question_id)
+            for question_id in candidate_ids
+            if manifest.question_by_id(question_id).tier is not None
+        ]
         if not tiered:
             raise QuizStateError("adaptive quiz has no calibrated questions remaining")
 
-        current_entropy = self._entropy(posterior)
-        scored: list[tuple[float, Question]] = []
-        for question in tiered:
-            correct_likelihoods = self._correct_likelihoods(manifest, question)
-            p_correct = sum(
-                prior * likelihood
-                for prior, likelihood in zip(posterior, correct_likelihoods, strict=True)
-            )
-            posterior_if_correct = self._normalized(
-                [
-                    prior * likelihood
-                    for prior, likelihood in zip(posterior, correct_likelihoods, strict=True)
-                ]
-            )
-            posterior_if_wrong = self._normalized(
-                [
-                    prior * (1.0 - likelihood)
-                    for prior, likelihood in zip(posterior, correct_likelihoods, strict=True)
-                ]
-            )
-            expected_entropy = (
-                p_correct * self._entropy(posterior_if_correct)
-                + (1.0 - p_correct) * self._entropy(posterior_if_wrong)
-            )
-            scored.append((current_entropy - expected_entropy, question))
-
-        best_gain = max(gain for gain, _ in scored)
-        best = [question for gain, question in scored if math.isclose(gain, best_gain, rel_tol=1e-12, abs_tol=1e-12)]
-        return self.rng.choice(best)
+        distance = min(abs(manifest.tier_index(question.tier) - target_tier) for question in tiered)
+        nearest = [
+            question
+            for question in tiered
+            if abs(manifest.tier_index(question.tier) - target_tier) == distance
+        ]
+        return self.rng.choice(nearest)
 
     def _update_tier_posterior(
         self,
@@ -276,7 +258,7 @@ class QuizService:
     def _tier_estimate(self, manifest: QuizManifest, posterior: list[float] | None) -> TierEstimate | None:
         if not manifest.adaptive or posterior is None:
             return None
-        best_index = max(range(len(posterior)), key=posterior.__getitem__)
+        best_index = self._posterior_median_index(posterior)
 
         cumulative = 0.0
         lower_index = 0
@@ -301,15 +283,20 @@ class QuizService:
         )
 
     @staticmethod
+    def _posterior_median_index(posterior: list[float]) -> int:
+        cumulative = 0.0
+        for index, probability in enumerate(posterior):
+            cumulative += probability
+            if cumulative >= 0.5:
+                return index
+        return len(posterior) - 1
+
+    @staticmethod
     def _normalized(values: list[float]) -> list[float]:
         total = sum(values)
         if total <= 0:
             return [1.0 / len(values)] * len(values)
         return [value / total for value in values]
-
-    @staticmethod
-    def _entropy(values: list[float]) -> float:
-        return -sum(value * math.log(value) for value in values if value > 0)
 
     def _key(self, session: QuizSession) -> tuple[int | None, int, int]:
         return (session.guild_id, session.channel_id, session.user_id)
