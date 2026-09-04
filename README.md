@@ -24,12 +24,20 @@ A data package registers itself like this:
 gtnh = "gtnh_quiz_data:load_manifest"
 ```
 
-The provider returns a mapping matching schema version 1. The engine validates
-question IDs, choice IDs/text, exactly one correct choice, sample size, and Discord
-alias names before registering commands. Choice text may be up to 500 characters.
-Questions and full answer text render in an embed; the interaction buttons use
-short `A` through `E` selector labels so Discord's button-label limit does not
-constrain the knowledge being tested.
+Schema version 1 remains supported for ordinary weighted quizzes. Schema version
+2 can additionally define an ordered `tiers` list and a `tier` on calibrated
+questions. Tier-aware quizzes maintain a Bayesian probability distribution over
+the declared progression tiers. After each answer, the engine updates that
+distribution and chooses the next unused question nearest the posterior median,
+so strong answers move the probe upward while misses move it downward. The final
+result includes the weighted score, estimated tier, and a likely tier range.
+
+The engine validates question IDs, choice IDs/text, exactly one correct choice,
+sample size, Discord alias names, tier IDs, and tier coverage before registering
+commands. Choice text may be up to 500 characters. Questions and full answer text
+render in an embed; the interaction buttons use short `A` through `E` selector
+labels so Discord's button-label limit does not constrain the knowledge being
+tested.
 
 `QUIZ_QUESTION_SET_STRICT` defaults to `true`. If an explicitly selected question
 pack is missing or invalid, addon setup fails instead of silently starting with a
