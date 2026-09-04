@@ -86,9 +86,17 @@ class QuizView(discord.ui.View):
 
             feedback = "Correct." if result.correct else "Incorrect."
             if result.complete:
-                await interaction.followup.send(
-                    f"{feedback} Quiz complete — final score: {result.score:.2f} / 100."
-                )
+                result_lines = [f"{feedback} Quiz complete. Final score: {result.score:.2f} / 100."]
+                if result.tier_estimate is not None:
+                    estimate = result.tier_estimate
+                    range_text = estimate.lower_label
+                    if estimate.upper_label != estimate.lower_label:
+                        range_text += f" to {estimate.upper_label}"
+                    result_lines.append(
+                        f"Estimated tier: **{estimate.label}** "
+                        f"({estimate.confidence:.0%} exact-tier confidence; likely range: {range_text})."
+                    )
+                await interaction.followup.send("\n".join(result_lines))
                 return
 
             await interaction.followup.send(feedback, ephemeral=True)
@@ -148,7 +156,7 @@ class QuizAddon:
                     )
                 await interaction.response.send_message("No quiz question sets are loaded." + detail, ephemeral=True)
                 return
-            lines = [f"`{manifest.id}` — {manifest.title}" for manifest in manifests]
+            lines = [f"`{manifest.id}` - {manifest.title}" for manifest in manifests]
             await interaction.response.send_message("Available quizzes:\n" + "\n".join(lines), ephemeral=True)
 
         @group.command(name="start", description="Start a quiz")
@@ -204,9 +212,10 @@ class QuizAddon:
             guild_id=interaction.guild_id,
             channel_id=interaction.channel_id,
         )
+        adaptive_note = " Questions adapt to your estimated tier." if manifest.adaptive else ""
         await interaction.response.send_message(
-            f"Starting **{manifest.title}** for {interaction.user.mention} — "
-            f"{len(session.question_ids)} questions."
+            f"Starting **{manifest.title}** for {interaction.user.mention} - "
+            f"{manifest.sample_size} questions.{adaptive_note}"
         )
         await self.send_question(interaction, session.id, interaction.user.id, 0, first_question)
 
