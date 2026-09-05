@@ -9,13 +9,16 @@ from . import QUESTION_SET_ENTRYPOINT_GROUP
 from .models import QuizManifest
 
 
+DEFAULT_QUESTION_SETS = frozenset({"gtnh", "tfg"})
+
+
 class QuestionSetLoadError(RuntimeError):
     pass
 
 
 def parse_enabled_question_sets(raw: str | None) -> frozenset[str] | None:
     if raw is None or not raw.strip():
-        return frozenset()
+        return DEFAULT_QUESTION_SETS
     if raw.strip() == "*":
         return None
     return frozenset(part.strip() for part in raw.split(",") if part.strip())
