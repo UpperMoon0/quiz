@@ -13,9 +13,16 @@ Enable the addon in Discord Adapter:
 ```env
 DISCORD_ADDONS=quiz
 DISCORD_ADDON_STRICT=true
-QUIZ_QUESTION_SETS=gtnh
 QUIZ_QUESTION_SET_STRICT=true
 ```
+
+GTNH and TFG Modern are the built-in default question sets. When their data
+packages are installed, both load automatically without setting
+`QUIZ_QUESTION_SETS`.
+
+`QUIZ_QUESTION_SETS` is only an optional override. Set it to a comma-separated
+subset such as `gtnh` or `tfg`, or to `*` to load every installed question-set
+entry point.
 
 A data package registers itself like this:
 
@@ -39,9 +46,10 @@ render in an embed; the interaction buttons use short `A` through `E` selector
 labels so Discord's button-label limit does not constrain the knowledge being
 tested.
 
-`QUIZ_QUESTION_SET_STRICT` defaults to `true`. If an explicitly selected question
-pack is missing or invalid, addon setup fails instead of silently starting with a
-partial catalog. Set it to `false` only when partial availability is intentional.
+`QUIZ_QUESTION_SET_STRICT` defaults to `true`. If a default or explicitly selected
+question pack is missing or invalid, addon setup fails instead of silently
+starting with a partial catalog. Set it to `false` only when partial availability
+is intentional.
 
 ## Discord commands
 
